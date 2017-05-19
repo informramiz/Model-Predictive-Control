@@ -45,7 +45,7 @@ size_t delta_start = epsi_start + N;
 size_t a_start = delta_start + N - 1;
 
 class FG_eval {
- public:
+public:
   Eigen::VectorXd coeffs;
   // Coefficients of the fitted polynomial.
   FG_eval(Eigen::VectorXd coeffs) { this->coeffs = coeffs; }
@@ -58,11 +58,33 @@ class FG_eval {
     // Any additions to the cost should be added to `fg[0]`.
     fg[0] = 0;
 
+    //TODO
     // Reference State Cost
-    // TODO: Define the cost related the reference state and
-    // any anything you think may be beneficial.
+    // Define the cost related the reference state
+    for (int i = 0; i < N; ++i) {
+      //to reduce cte
+      fg[0] += CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+      //to reduce orientation error
+      fg[0] += CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+      //this one specific avoids the car from stopping before destination
+      fg[0] += CppAD::pow(vars[v_start + i] - ref_v, 2);
+    }
 
-    //
+    //define the cost for magnitude of actuators applied
+    //to minimize the use of actuators
+    for (int i = 0; i < N - 1; ++i) {
+      fg[0] += CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += CppAD::pow(vars[a_start + i], 2);
+    }
+
+    //minimize the value gap between two actuations
+    for (int i = 0; i < N - 2; ++i) {
+      fg[0] += CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+    }
+
+
+    // TODO
     // Setup Constraints
     //
     // NOTE: In this section you'll setup the model constraints.
@@ -81,21 +103,49 @@ class FG_eval {
 
     // The rest of the constraints
     for (int i = 0; i < N - 1; i++) {
+      //extract state for time t+1
       AD<double> x1 = vars[x_start + i + 1];
+      AD<double> y1 = vars[y_start + i + 1];
+      AD<double> v1 = vars[v_start + i + 1];
+      AD<double> psi1 = vars[psi_start + i + 1];
+      AD<double> cte1 = vars[cte_start + i + 1];
+      AD<double> epsi1 = vars[epsi_start + i + 1];
 
+      //extract state for timestep t
       AD<double> x0 = vars[x_start + i];
-      AD<double> psi0 = vars[psi_start + i];
+      AD<double> y0 = vars[y_start + i];
       AD<double> v0 = vars[v_start + i];
+      AD<double> psi0 = vars[psi_start + i];
+      AD<double> cte0 = vars[cte_start + i];
+      AD<double> epsi0 = vars[epsi_start + i];
 
-      // Here's `x` to get you started.
+      //extract actuations for time t
+      AD<double> delta0 = vars[delta_start + i];
+      AD<double> a0 = vars[a_start + i];
+
+      //calculate cte and current epsi
+      AD<double> psi_desired0 = CppAD::atan(coeffs[1]);
+      AD<double> f0 = coeffs[0] + coeffs[1] * x0;
+
+      // add 2 to each index fg[0] contains cost and fg[1] has already been
+      //initialized
+
       // The idea here is to constraint this value to be 0.
       //
       // NOTE: The use of `AD<double>` and use of `CppAD`!
       // This is also CppAD can compute derivatives and pass
       // these to the solver.
 
-      // TODO: Setup the rest of the model constraints
+      //predict next state next_state_pred and
+      //calculate diff between actual next state and predicted next and
+      //set (next_state - next_state_pred) as constraint
+      // because we want to constraint this diff value to 0.
       fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
+      fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
+      fg[2 + psi_start + i] = psi1 - (psi0 + v0/Lf * delta0 * dt);
+      fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+      fg[2 + cte_start + i] = cte1 - ((f0 - y0) + v0 * CppAD::sin(epsi0) * dt);
+      fg[2 + epsi_start + i] = epsi1 - ((psi_desired0 - psi0) + v0/Lf * delta0 * dt);
     }
   }
 };
@@ -118,9 +168,10 @@ vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs) {
   double cte = x0[4];
   double epsi = x0[5];
 
-  // number of independent variables
-  // N timesteps == N - 1 actuations
+  // total number of independent variables = N * variables in state + total actuations = N * 6 + total actuations
+  // N timesteps == N - 1 actuations and we have to 2 actuators so = 2 * (N-1)
   size_t n_vars = N * 6 + (N - 1) * 2;
+
   // Number of constraints
   size_t n_constraints = N * 6;
 
@@ -214,9 +265,9 @@ vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs) {
   auto cost = solution.obj_value;
   std::cout << "Cost " << cost << std::endl;
   return {solution.x[x_start + 1],   solution.x[y_start + 1],
-          solution.x[psi_start + 1], solution.x[v_start + 1],
-          solution.x[cte_start + 1], solution.x[epsi_start + 1],
-          solution.x[delta_start],   solution.x[a_start]};
+    solution.x[psi_start + 1], solution.x[v_start + 1],
+    solution.x[cte_start + 1], solution.x[epsi_start + 1],
+    solution.x[delta_start],   solution.x[a_start]};
 }
 
 //
@@ -267,7 +318,7 @@ int main() {
 
   // TODO: fit a polynomial to the above x and y coordinates
   // The polynomial is fitted to a straight line so a polynomial with
-    // order 1 is sufficient.
+  // order 1 is sufficient.
   auto coeffs = polyfit(ptsx, ptsy, 1) ;
 
   // NOTE: free feel to play around with these
@@ -277,13 +328,13 @@ int main() {
   double v = 10;
   // TODO: calculate the cross track error
   // The cross track error is calculated by evaluating at polynomial at x, f(x)
-   // and subtracting y --->: cte = f(x) - y
+  // and subtracting y --->: cte = f(x) - y
   double cte = polyeval(coeffs, 0) - y;
 
   // TODO: calculate the orientation error
   //the orientation error is epsi = psi - atan(f'(x)).
   //derivative of polynomial with order 1 is: (coeffs[0] + coeffs[1] * x) = coeffs[1]
-  double epsi = psi - atan(coeffs[1]);
+  double epsi = 0 - atan(coeffs[1]);
 
   Eigen::VectorXd state(6);
   state << x, y, psi, v, cte, epsi;
@@ -313,6 +364,7 @@ int main() {
     a_vals.push_back(vars[7]);
 
     state << vars[0], vars[1], vars[2], vars[3], vars[4], vars[5];
+    std::cout << state << std::endl;
   }
 
   // Plot values
