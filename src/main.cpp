@@ -33,77 +33,45 @@ double rad2deg(double x) { return x * 180 / pi(); }
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
-string hasData(string s);
+string HasData(string s);
 
 // Evaluate a polynomial.
-double polyeval(Eigen::VectorXd coeffs, double x);
+double PolyEval(Eigen::VectorXd coeffs, double x);
 // Fit a polynomial.
 // Adapted from
 // https://github.com/JuliaMath/Polynomials.jl/blob/master/src/Polynomials.jl#L676-L716
-Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
+Eigen::VectorXd Polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
                         int order);
 
-int Test();
+// code for my own testing of MPC
 void MyTest();
-
-void readLakeTrackCsv(std::vector<double> &x, std::vector<double> &y);
+//function to read provided CSV file
+void ReadLakeTrackCsv(std::vector<double> &x, std::vector<double> &y);
+//function to test MPC on lake
 void TestLakeTrackCsv();
-
+//function to conver way points from Map to vehicle coordinates
 void TransformToVehicleCoordinates(double px, double py, double psi, vector<double> &ptsx, vector<double> &ptsy);
+//function to transform a single point from Map to vehicle coordinates
 void TransformPointToVehicleCoordinates(double px, double py, double psi, double &x, double &y);
-void TransformPointToVehicleCoordinates1(double px, double py, double psi, double &x, double &y);
 
-void MyTransform() {
-  double tx = -46.38823, ty = 66.63783;
-  //  double psi = deg2rad(-45);
-  double psi = 5.804719;
-
-  Eigen::MatrixXd M(3, 3);
-  //define vehicle to map
-  M << cos(psi), -sin(psi), tx,
-      sin(psi), cos(psi), ty,
-      0, 0, 1;
-
-  Eigen::VectorXd p(3);
-  p << -61.09,92.88499, 1;
-  auto t_p = M * p;
-
-  //from map to vehicle is just inverse of M
-  Eigen::MatrixXd M_inv = M.inverse();
-  //  std::cout << M_inv << std::endl;
-  auto p_o = M_inv * t_p;
-  std::cout << p_o << std::endl;
-}
+//Code provided by Udacity to pass project criteria
+int UdacityTest();
 
 int main() {
-  //  Eigen::VectorXd v;
-  //  std::vector<double> v1;
-  //  v1.push_back(0);
-  //  v = Eigen::VectorXd::Map(&v1[0], v1.size());
-  //  return 0;
-
-  return Test();
-  //  TestLakeTrackCsv();
-
-  //  MyTransform();
-  return 0;
-}
-
-void some() {
-
+  return UdacityTest();
 }
 
 void TestLakeTrackCsv() {
   std::vector<double> ptsx;
   std::vector<double> ptsy;
-  readLakeTrackCsv(ptsx, ptsy);
+  ReadLakeTrackCsv(ptsx, ptsy);
 
   Eigen::VectorXd ptsx_eigen = Eigen::VectorXd::Map(&ptsx[0], ptsx.size());
   Eigen::VectorXd ptsy_eigen = Eigen::VectorXd::Map(&ptsy[0], ptsy.size());
   std::cout << "X points count: " << ptsx_eigen.size() << std::endl;
   std::cout << "Y points count: " << ptsy_eigen.size() << std::endl;
 
-  Eigen::VectorXd coeffs = polyfit(ptsx_eigen, ptsy_eigen, 3);
+  Eigen::VectorXd coeffs = Polyfit(ptsx_eigen, ptsy_eigen, 3);
   std::cout << "Polynomial coeffs count: " << coeffs.size() << std::endl;
 
   //  plt::plot(ptsx, ptsy, "r-", ptsx, [&coeffs](double x) { return coeffs[0] + coeffs[1] * x + coeffs[2] * pow(x, 2)
@@ -119,7 +87,7 @@ void TestLakeTrackCsv() {
   double psi = 0;
   double v = 10;
 
-  double cte = polyeval(coeffs, x) - y;
+  double cte = PolyEval(coeffs, x) - y;
   double derivative_f = coeffs[1] + 2 * coeffs[2] * x + 3 * coeffs[3] * x * x;
   double epsi = psi_des - atan(derivative_f);
 
@@ -162,7 +130,7 @@ void TestLakeTrackCsv() {
   plt::show();
 }
 
-void readLakeTrackCsv(std::vector<double> &ptsx, std::vector<double> &ptsy) {
+void ReadLakeTrackCsv(std::vector<double> &ptsx, std::vector<double> &ptsy) {
   std::ifstream in_file("lake_track_waypoints.csv", std::ios::in);
 
   if(!in_file.is_open()) {
@@ -206,7 +174,7 @@ void MyTest() {
   // TODO: fit a polynomial to the above x and y coordinates
   // The polynomial is fitted to a straight line so a polynomial with
   // order 1 is sufficient.
-  auto coeffs = polyfit(ptsx, ptsy, 1) ;
+  auto coeffs = Polyfit(ptsx, ptsy, 1) ;
 
   // NOTE: free feel to play around with these
   double x = -1;
@@ -216,7 +184,7 @@ void MyTest() {
   // TODO: calculate the cross track error
   // The cross track error is calculated by evaluating at polynomial at x, f(x)
   // and subtracting y --->: cte = f(x) - y
-  double cte = polyeval(coeffs, 0) - y;
+  double cte = PolyEval(coeffs, 0) - y;
 
   // TODO: calculate the orientation error
   //the orientation error is epsi = psi - atan(f'(x)).
@@ -273,7 +241,7 @@ void MyTest() {
   plt::show();
 }
 
-int Test() {
+int UdacityTest() {
   uWS::Hub h;
 
   // MPC is initialized here!
@@ -287,7 +255,7 @@ int Test() {
     string sdata = string(data).substr(0, length);
     cout << sdata << endl;
     if (sdata.size() > 2 && sdata[0] == '4' && sdata[1] == '2') {
-      string s = hasData(sdata);
+      string s = HasData(sdata);
       if (s != "") {
         auto j = json::parse(s);
         string event = j[0].get<string>();
@@ -303,33 +271,54 @@ int Test() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          //TODO: convert ptsx and ptsy to vehicle coordinates system
+          //convert ptsx and ptsy to vehicle coordinates system
           TransformToVehicleCoordinates(px, py, psi, ptsx, ptsy);
 
-          //TODO: Calculate CTE and epsi to complete vehicle state
-          //fit  order 3 polynomial
-          double x = 0;
-          double psi_des = 0;
-          auto coeffs = polyfit(Eigen::VectorXd::Map(&ptsx[0], ptsx.size()), Eigen::VectorXd::Map(&ptsy[0], ptsy.size()), 3);
-          double cte = polyeval(coeffs, 0) - 0;
+          /***************
+           * From here onward, all coordinates are in vehicle coordinate system
+           ***************/
+
+          //Note: in vehicle coordinates vehicle position (px, py) is actually origin so (px, py) = (0, 0)
+          //similarly orientation of vehicle in vehicle coordinates is 0
+          px = 0;
+          py = 0;
+          psi = 0;
+
+          //convert vector to Eigen::VectorXd
+          Eigen::VectorXd ptsx_eigen = Eigen::VectorXd::Map(&ptsx[0], ptsx.size());
+          Eigen::VectorXd ptsy_eigen = Eigen::VectorXd::Map(&ptsy[0], ptsy.size());
+
+          //fit a 3rd order polynomial to form reference line. Most of the road in world
+          //can be represented by a 3rd order polynomial
+          auto coeffs = Polyfit(ptsx_eigen, ptsy_eigen, 3);
+          //calculate cross track error of vehicle position in y-axis (vehicle coordinates
+          double cte = PolyEval(coeffs, px) - py;
 
           /*
-           * TODO: Calculate steering angle and throttle using MPC.
+           * Calculate steering angle and throttle using MPC.
            *
            * Both are in between [-1, 1].
            *
            */
-          double derivative_f = coeffs[1] + 2 * coeffs[2] * 0 + 3 * coeffs[3] * 0 * 0;
-          double epsi = 0 - atan(derivative_f);
+          //calculate derivative of 3rd order polynomial fitted on px
+          double derivative_f = coeffs[1] + 2 * coeffs[2] * px + 3 * coeffs[3] * px * px;
+          //calculate desired orientation (orientation of reference line)
+          double psi_desired = atan(derivative_f);
+          //calculate orientation error epsi between reference line orientation (psi_desired)
+          //and vehicle orientation psi
+          double epsi = psi - psi_desired;
 
+          //make state vector
           Eigen::VectorXd state(6);
-          state << 0, 0, 0, v, cte, epsi;
+          state << px, py, psi, v, cte, epsi;
 
-          //Display the MPC predicted trajectory
+          //vectors to store the MPC predicted trajectory
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
-          auto vars = mpc.Solve(state, coeffs, mpc_x_vals, mpc_y_vals);
 
+          //call MPC solver with current vehicle state
+          auto vars = mpc.Solve(state, coeffs, mpc_x_vals, mpc_y_vals);
+          //extract steering angle and throttle which are at 6 and 7 indexes
           double steer_value = vars[6];
           double throttle_value = vars[7];
 
@@ -416,7 +405,7 @@ int Test() {
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
-string hasData(string s) {
+string HasData(string s) {
   auto found_null = s.find("null");
   auto b1 = s.find_first_of("[");
   auto b2 = s.rfind("}]");
@@ -429,7 +418,7 @@ string hasData(string s) {
 }
 
 // Evaluate a polynomial.
-double polyeval(Eigen::VectorXd coeffs, double x) {
+double PolyEval(Eigen::VectorXd coeffs, double x) {
   double result = 0.0;
   for (int i = 0; i < coeffs.size(); i++) {
     result += coeffs[i] * pow(x, i);
@@ -440,7 +429,7 @@ double polyeval(Eigen::VectorXd coeffs, double x) {
 // Fit a polynomial.
 // Adapted from
 // https://github.com/JuliaMath/Polynomials.jl/blob/master/src/Polynomials.jl#L676-L716
-Eigen::VectorXd polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
+Eigen::VectorXd Polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
                         int order) {
   assert(xvals.size() == yvals.size());
   assert(order >= 1 && order <= xvals.size() - 1);
@@ -469,13 +458,6 @@ void TransformToVehicleCoordinates(double px, double py, double psi, vector<doub
 }
 
 void TransformPointToVehicleCoordinates(double px, double py, double psi, double &x, double &y) {
-  //apply rotation to align vehicle coordinate system and map coordinate system
-  //followed by translation to translate observation with respect to particle position
-  x = x*cos(psi) - y*sin(psi) + px;
-  y = x*sin(psi) + y*cos(psi) + py;
-}
-
-void TransformPointToVehicleCoordinates1(double px, double py, double psi, double &x, double &y) {
   //apply rotation to align vehicle coordinate system and map coordinate system
   //followed by translation to translate observation with respect to particle position
   //  x = x - px;
