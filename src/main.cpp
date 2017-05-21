@@ -297,12 +297,6 @@ int Test() {
           vector<double> ptsx = j[1]["ptsx"];
           vector<double> ptsy = j[1]["ptsy"];
 
-//          std::cout << "X points count: " << ptsx.size() << std::endl;
-//          std::cout << "Y points count: " << ptsy.size() << std::endl;
-
-          //std::cout << "ptsx: " << ptsx[0] << ", " << ptsx[1] << std::endl;
-          //std::cout << "x: " << px << std::endl;
-
           //current state of the vehicle in vehicle coordinates
           double px = j[1]["x"];
           double py = j[1]["y"];
@@ -326,6 +320,7 @@ int Test() {
            *
            */
           double derivative_f = coeffs[1] + 2 * coeffs[2] * 0 + 3 * coeffs[3] * 0 * 0;
+//          double derivative_f = coeffs[1] + 2 * coeffs[2] * 0;
           double epsi = 0 - atan(derivative_f);
 
           Eigen::VectorXd state(6);

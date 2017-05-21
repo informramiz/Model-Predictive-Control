@@ -9,7 +9,7 @@ using CppAD::AD;
 
 // TODO: Set N and dt
 size_t N = 25;
-double dt = 0.05;
+double dt = 0.03;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -76,7 +76,7 @@ public:
 
     //minimize the value gap between two actuations
     for (int i = 0; i < N - 2; ++i) {
-      fg[0] += 500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 1500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
@@ -122,8 +122,10 @@ public:
 
       //calculate cte and current epsi
       AD<double> f_derivative = coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * CppAD::pow(x0, 2);
+//      AD<double> f_derivative = coeffs[1] + 2 * coeffs[2] * x0;
       AD<double> psi_desired0 = CppAD::atan(f_derivative);
       AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
+//      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2);
 
       // add 2 to each index fg[0] contains cost and fg[1] has already been
       //initialized
@@ -292,6 +294,6 @@ vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, vector<dou
   return {solution.x[x_start + 1],   solution.x[y_start + 1],
     solution.x[psi_start + 1], solution.x[v_start + 1],
     solution.x[cte_start + 1], solution.x[epsi_start + 1],
-    solution.x[delta_start + 1],   solution.x[a_start + 1]};
+    solution.x[delta_start] + solution.x[delta_start + 1],   solution.x[a_start + 1]};
 }
 
