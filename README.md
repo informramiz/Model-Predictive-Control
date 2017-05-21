@@ -1,6 +1,6 @@
 # Model Predictive Control (MPC)
 
-Model Predictive control coded in C++ to control a vehicle's velocity and steering angle, with a latency of 100ms in vehicle commands. 
+Model Predictive control coded in C++ to control a vehicle's `velocity` and `steering angle`, with a `latency of 100ms` in between vehicle commands. 
 
 I have tuned this MPC implementation with following hyperparameter values.
 
@@ -18,7 +18,7 @@ Following is a part of video recorded by running MPC with above mentioned hyperp
 
 ## Getting Started
 
-There is a detailed example of code in main.cpp that you can refer to for how to connect to the simulator and how to use PID-Controller. Following is a high level use of PID-Controller code.
+There is a detailed example of code in main.cpp that you can refer to for how to connect to the simulator and how to use MPC. Following is a high level use of MPC code.
 
 ```
 
@@ -51,13 +51,14 @@ px = 0;
 py = 0;
 psi = 0;
 
-//convert vector to Eigen::VectorXd
+//convert std::vector to Eigen::VectorXd
 Eigen::VectorXd ptsx_eigen = Eigen::VectorXd::Map(&ptsx[0], ptsx.size());
 Eigen::VectorXd ptsy_eigen = Eigen::VectorXd::Map(&ptsy[0], ptsy.size());
 
-//fit a 3rd order polynomial to form reference line. Most of the road in world
+//fit a 3rd order polynomial to form reference line. Most of the roads in the world
 //can be represented by a 3rd order polynomial
 auto coeffs = Polyfit(ptsx_eigen, ptsy_eigen, 3);
+
 //calculate cross track error of vehicle position in y-axis (vehicle coordinates
 double cte = PolyEval(coeffs, px) - py;
 
