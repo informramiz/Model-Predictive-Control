@@ -72,7 +72,7 @@ dt = 0.05
 steering angle rate change cost = 500
 ```
 
-Then I tried following combinations from following hyperparameter values
+Then I tried combinations from following hyperparameter values
 
 ```
 N = 25, 35, 50, 100, 25
@@ -88,7 +88,7 @@ dt = 0.03
 steering_angle rate change cost = 500
 ```
 
-I knew I have to increase steering angle change cost to avoid oscillations so I tried increasing steering angle and observed behavior. I reached to a satisfactory result following final values 
+I knew I have to increase `steering_angle_change cost` to avoid oscillations so I tried increasing that and observed result. After trying multiple values, I reached to a satisfactory result following final values 
 
 ```
 N = 25
@@ -96,7 +96,7 @@ dt = 0.03
 steering_angle rate change cost = 10000
 ```
 
-## Waypoints Pre-processing 
+## Way-Points Pre-processing 
 
 * For calculation and visualization ease I converted way points to vehicle coordinates. 
 
@@ -109,30 +109,31 @@ psi = 0;
 
 * For map-coordinates to vehicle coordinates 
 
-** I first homogenize the way points
+    * I first homogenize the way points
 
     ```
     [px, py] --> [px, py, 1]
     ```
 
-** Then calculate vehicle-to-map coordinates 3D transformation as below
+    * Then calculate vehicle-to-map coordinates 3D transformation as below
 
     ```
     |cos(psi), -sin(psi), px|
     |sin(psi), cos(psi),  py|
     |0,         0,        1 |
     ```
-** Then map-to-vehicle coordinates transformation is just `inverse` of above transformation.
-** I apply this `inverse transformation` to all way points to convert map coordinates to vehicle coordinates.
+    * Then map-to-vehicle coordinates transformation is just `inverse` of above transformation.
+
+    * I apply this `inverse transformation` to all way points to convert map coordinates to vehicle coordinates.
 
 
 ## Latency Handling
 
-I have used a latency of 100ms which is the time between the point when model sends actuator commands to vehicle and time when vehicle implements those commands. In my model latency mainly affects `steering_angle`.
+Latency is the time between the point when model sends actuation commands to vehicle and point when vehicle implements those commands. I have used a latency of 100ms. In my model latency mainly affects `steering_angle` so I have only handled that.
 
-To handle steering_angle latency, instead of sending steering angle actuation for current state, I send sum of steering angle for current state and steering angle for next predicted state. 
+To handle `steering_angle latency`, instead of sending steering angle actuation for current state, I send `sum` of steering angle for `current state` and steering angle for `next predicted state`. 
 
-I do this under the assumption that after 100ms latency when the steering angle actuation command is implemented by the vehicle, the vehicle will be in next state instead of current state and so I send sum of current state actuation and next predicted state actuation for steering angle.
+I do this under the `assumption` that after 100ms latency when the steering angle actuation command is implemented by the vehicle, the vehicle will be in next state instead of current state and so I send sum of current state and next predicted state actuation for steering angle.
 
 
 ## Getting Started
