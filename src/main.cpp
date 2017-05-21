@@ -453,7 +453,7 @@ Eigen::VectorXd Polyfit(Eigen::VectorXd xvals, Eigen::VectorXd yvals,
 void TransformToVehicleCoordinates(double px, double py, double psi, vector<double> &ptsx, vector<double> &ptsy) {
   size_t points_count = ptsx.size();
   for (int i = 0; i < points_count; ++i) {
-    TransformPointToVehicleCoordinates1(px, py, psi, ptsx[i], ptsy[i]);
+    TransformPointToVehicleCoordinates(px, py, psi, ptsx[i], ptsy[i]);
   }
 }
 
