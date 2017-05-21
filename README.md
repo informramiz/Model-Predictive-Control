@@ -16,6 +16,125 @@ Following is a part of video recorded by running MPC with above mentioned hyperp
 
 ![animation](visualization/animated.gif)
 
+## Model Details
+
+My model consists of
+
+* Vehicle State 
+* Actuators 
+* Model update equations.
+
+### Vehicle State
+
+Vehicle state consists of vehicle position `(x, y)`, vehicle orientation `psi`, vehicle velocity `v`, cross track error `cte` and orientation error `epsi`.
+
+```
+state = = [x, y, psi, v, cte, epsi]
+```
+
+### Actuators
+
+Two actuators are handled in this model.
+
+1. Steering angle (delta)
+2. Acclereration/Throttle (a)
+
+### Model Update Equations
+
+```
+x_t+1 = x_t + v_t * cos(psi) * dt
+y_t+1 = y_t + v_t * sin(psi) * dt
+psi_t+1 = psi_t + v_t/Lf * delta * dt
+v_t+1 = v_t + a_t * dt
+cte_t+1 = (f(x_t) - y_t) + v_t * sin(epsi_t) * dt
+epsi_t+1 = (psi_desired - psi_t) +  v_t/Lf * delta * dt
+```
+
+For calculating psi_desired I used the following formual
+
+```
+psi_desired = atan(f'(x_t) - psi_t)
+
+where 
+
+f'(x_t) = derivative of polynomial of order=3 fitted on x_t
+```
+
+## Hyperparameters Tunning 
+
+I tuned parameters by trying different values thoughtfully and looking at behavior of vehicle's driving and how it changes by changing different values. 
+
+I started with values
+
+```
+N = 25
+dt = 0.05
+steering angle rate change cost = 500
+```
+
+Then I tried following combinations from following hyperparameter values
+
+```
+N = 25, 35, 50, 100, 25
+dt = 0.05, 0.04, 0.03, 0.02, 0.03
+steering angle rate change cost = 500, 100, 500, 1000, 1500, 2000, 2500...10000, 12000, 10000
+```
+
+Finally I reached to a point where vehicle was making it to the end but with huge oscillations ,with following values 
+
+```
+N = 25
+dt = 0.03
+steering_angle rate change cost = 500
+```
+
+I knew I have to increase steering angle change cost to avoid oscillations so I tried increasing steering angle and observed behavior. I reached to a satisfactory result following final values 
+
+```
+N = 25
+dt = 0.03
+steering_angle rate change cost = 10000
+```
+
+## Waypoints Pre-processing 
+
+* For calculation and visualization ease I converted way points to vehicle coordinates. 
+
+* As in vehicle coordinates vehicle position (px, py) is actually origin so (px, py) = (0, 0). Similarly orientation psi of vehicle in vehicle coordinates is also 0
+```
+px = 0;
+py = 0;
+psi = 0;
+```
+
+* For map-coordinates to vehicle coordinates 
+
+** I first homogenize the way points
+
+    ```
+    [px, py] --> [px, py, 1]
+    ```
+
+** Then calculate vehicle-to-map coordinates 3D transformation as below
+
+    ```
+    |cos(psi), -sin(psi), px|
+    |sin(psi), cos(psi),  py|
+    |0,         0,        1 |
+    ```
+** Then map-to-vehicle coordinates transformation is just `inverse` of above transformation.
+** I apply this `inverse transformation` to all way points to convert map coordinates to vehicle coordinates.
+
+
+## Latency Handling
+
+I have used a latency of 100ms which is the time between the point when model sends actuator commands to vehicle and time when vehicle implements those commands. In my model latency mainly affects `steering_angle`.
+
+To handle steering_angle latency, instead of sending steering angle actuation for current state, I send sum of steering angle for current state and steering angle for next predicted state. 
+
+I do this under the assumption that after 100ms latency when the steering angle actuation command is implemented by the vehicle, the vehicle will be in next state instead of current state and so I send sum of current state actuation and next predicted state actuation for steering angle.
+
+
 ## Getting Started
 
 There is a detailed example of code in main.cpp that you can refer to for how to connect to the simulator and how to use MPC. Following is a high level use of MPC code.
