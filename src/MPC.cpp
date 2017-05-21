@@ -279,12 +279,12 @@ vector<double> MPC::Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, vector<dou
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
 
-  for (int i = x_start; i < y_start; ++i) {
-    x_vals.push_back(solution.x[x_start+i]);
+  for (int i = x_start; i < y_start - 1; ++i) {
+    x_vals.push_back(solution.x[i + 1]);
   }
 
-  for (int i = y_start; i < psi_start; ++i) {
-    y_vals.push_back(solution.x[y_start+i]);
+  for (int i = y_start; i < psi_start - 1; ++i) {
+    y_vals.push_back(solution.x[i + 1]);
   }
 
   return {solution.x[x_start + 1],   solution.x[y_start + 1],
