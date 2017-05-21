@@ -76,7 +76,7 @@ public:
 
     //minimize the value gap between two actuations
     for (int i = 0; i < N - 2; ++i) {
-      fg[0] += 1500 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += 3000 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
 
