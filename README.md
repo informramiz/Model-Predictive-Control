@@ -1,7 +1,101 @@
-# CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
+# Model Predictive Control (MPC)
 
----
+Model Predictive control coded in C++ to control a vehicle's velocity and steering angle, with a latency of 100ms in vehicle commands. 
+
+I have tuned this MPC implementation with following hyperparameter values.
+
+```
+(trajectory/horizon lenght)                                 --> N = 25
+(timestep)                                                  --> dt = 0.03
+reference velocity                                          --> ref_v = 40 mph
+(distance between vehicle front and center of gravity)      --> Lf = 2.67
+(steering angle change rate penality in cost function)      --> 10000
+```
+
+Following is a part of video recorded by running MPC with above mentioned hyperparameter values.
+
+![animation](visualization/animated.gif)
+
+## Getting Started
+
+There is a detailed example of code in main.cpp that you can refer to for how to connect to the simulator and how to use PID-Controller. Following is a high level use of PID-Controller code.
+
+```
+
+// MPC is initialized here!
+MPC mpc;
+
+//Required input: path points ptsx, ptsy and 
+//vehicle position (px, py), vehicle orientation psi and vehicle speed v
+
+//(x and y coordinates) path way points in map coordinates
+vector<double> ptsx = ?
+vector<double> ptsy = ?
+
+//current state of the vehicle in vehicle coordinates
+double px = ? ;
+double py = ? ;
+double psi = ? ;
+double v = ? ;
+
+//convert ptsx and ptsy to vehicle coordinates system
+TransformToVehicleCoordinates(px, py, psi, ptsx, ptsy);
+
+/***************
+* From here onward, all coordinates are in vehicle coordinate system
+***************/
+
+//Note: in vehicle coordinates vehicle position (px, py) is actually origin so (px, py) = (0, 0)
+//similarly orientation of vehicle in vehicle coordinates is 0
+px = 0;
+py = 0;
+psi = 0;
+
+//convert vector to Eigen::VectorXd
+Eigen::VectorXd ptsx_eigen = Eigen::VectorXd::Map(&ptsx[0], ptsx.size());
+Eigen::VectorXd ptsy_eigen = Eigen::VectorXd::Map(&ptsy[0], ptsy.size());
+
+//fit a 3rd order polynomial to form reference line. Most of the road in world
+//can be represented by a 3rd order polynomial
+auto coeffs = Polyfit(ptsx_eigen, ptsy_eigen, 3);
+//calculate cross track error of vehicle position in y-axis (vehicle coordinates
+double cte = PolyEval(coeffs, px) - py;
+
+/*
+* Calculate steering angle and throttle using MPC.
+*
+* Both are in between [-1, 1].
+*
+*/
+//calculate derivative of 3rd order polynomial fitted on px
+double derivative_f = coeffs[1] + 2 * coeffs[2] * px + 3 * coeffs[3] * px * px;
+
+//calculate desired orientation (orientation of reference line)
+double psi_desired = atan(derivative_f);
+
+//calculate orientation error epsi between reference line orientation (psi_desired)
+//and vehicle orientation psi
+double epsi = psi - psi_desired;
+
+//make state vector
+Eigen::VectorXd state(6);
+state << px, py, psi, v, cte, epsi;
+
+//vectors to store the MPC predicted trajectory
+vector<double> mpc_x_vals;
+vector<double> mpc_y_vals;
+
+//call MPC solver with current vehicle state
+auto vars = mpc.Solve(state, coeffs, mpc_x_vals, mpc_y_vals);
+
+//extract steering angle and throttle which are at 6 and 7 indexes
+double steer_value = vars[6];
+double throttle_value = vars[7];
+
+//pass steer_value and throttel_value to vehicle
+
+```
+
 
 ## Dependencies
 
@@ -35,72 +129,10 @@ Self-Driving Car Engineer Nanodegree Program
 
 ## Basic Build Instructions
 
+There are scripts for `clean.sh`, `build.sh` and `run.sh` and a script `do.sh` to do build and run together or you can compile the project manually using following cmake commands.  
 
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./mpc`.
 
-## Tips
-
-1. It's recommended to test the MPC on basic examples to see if your implementation behaves as desired. One possible example
-is the vehicle starting offset of a straight line (reference). If the MPC implementation is correct, after some number of timesteps
-(not too many) it should find and track the reference line.
-2. The `lake_track_waypoints.csv` file has the waypoints of the lake track. You could use this to fit polynomials and points and see of how well your model tracks curve. NOTE: This file might be not completely in sync with the simulator so your solution should NOT depend on it.
-3. For visualization this C++ [matplotlib wrapper](https://github.com/lava/matplotlib-cpp) could be helpful.
-
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/b1ff3be0-c904-438e-aad3-2b5379f0e0c3/concepts/1a2255a0-e23c-44cf-8d41-39b8a3c8264a)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
