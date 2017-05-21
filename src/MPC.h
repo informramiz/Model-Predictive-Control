@@ -15,7 +15,7 @@ class MPC {
   // Solve the model given an initial state.
   // Return the next state and actuations as a
   // vector.
-  vector<double> Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs);
+  vector<double> Solve(Eigen::VectorXd x0, Eigen::VectorXd coeffs, vector<double> &x_vals, vector<double> &y_vals);
 };
 
 #endif /* MPC_H */
