@@ -458,29 +458,27 @@ void TransformToVehicleCoordinates(double px, double py, double psi, vector<doub
 }
 
 void TransformPointToVehicleCoordinates(double px, double py, double psi, double &x, double &y) {
-  //apply rotation to align vehicle coordinate system and map coordinate system
-  //followed by translation to translate observation with respect to particle position
-  //  x = x - px;
-  //  y = y - py;
-  //
-  //  double angle = deg2rad(90);
-  //  x = x*cos(psi) - y*sin(psi);
-  //  y = x*sin(psi) + y*cos(psi);
-
-  //  x = x + px;
-  //  y = y + py;
-
+  //convert point to homogeneous space to apply transformation
   Eigen::VectorXd p(3);
   p << x, y, 1;
 
+  //define vehicle to map coordinate system transformation which is:
+  //apply rotation to align vehicle coordinate system and map coordinate system
+  //followed by translation to translate observation with respect to vehicle position
+  //result will be in map coordinates
   Eigen::MatrixXd M(3, 3);
   M << cos(psi), -sin(psi), px,
       sin(psi), cos(psi), py,
       0, 0, 1;
 
+
+  //transformation for converting from map-coordinate system to
+  //vehicle-coordinate system is just inverse of transform M (which vehicle to map transformation)
   Eigen::MatrixXd M_inv = M.inverse();
+  //transform the point to vehicle coordinates
   auto p_t = M_inv * p;
 
+  //dehomogenize the point by removing the last value which is equal to 1
   x = p_t(0);
   y = p_t(1);
 }
