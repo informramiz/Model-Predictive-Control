@@ -320,7 +320,6 @@ int Test() {
            *
            */
           double derivative_f = coeffs[1] + 2 * coeffs[2] * 0 + 3 * coeffs[3] * 0 * 0;
-//          double derivative_f = coeffs[1] + 2 * coeffs[2] * 0;
           double epsi = 0 - atan(derivative_f);
 
           Eigen::VectorXd state(6);
@@ -342,8 +341,6 @@ int Test() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
-//          std::cout << "MPC_x count: " << mpc_x_vals.size() << std::endl;
-//          std::cout << "MPC_y count: " << mpc_y_vals.size() << std::endl;
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
