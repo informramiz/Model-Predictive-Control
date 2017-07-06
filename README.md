@@ -135,6 +135,8 @@ To handle `steering_angle latency`, instead of sending steering angle actuation 
 
 I do this under the `assumption` that after 100ms latency when the steering angle actuation command is implemented by the vehicle, the vehicle will be in next state instead of current state and so I send sum of current state and next predicted state actuation for steering angle.
 
+## Math and Intuition Behind MPC
+I took some rough [notes](https://drive.google.com/open?id=0Bxv9kPZMr-zbRzBRSnR2dkRuZjA) during my study of MPC. 
 
 ## Getting Started
 
